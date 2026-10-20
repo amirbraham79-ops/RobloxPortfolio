@@ -1,0 +1,104 @@
+local players = game:GetService("Players")
+local replicatedstorage = game:GetService("ReplicatedStorage")
+local userInputService = game:GetService("UserInputService")
+local camera = workspace.CurrentCamera
+
+local animations = replicatedstorage:WaitForChild("animations")
+local player = players.LocalPlayer
+local dashEvent = replicatedstorage:WaitForChild("DashEvent")
+
+local canDash = true
+local dashCooldown = 1
+local dashDuration = 0.15
+local force = 85
+
+local function getDashDirection(character, humanoid)
+	local moveDirection = humanoid.MoveDirection
+	if moveDirection.Magnitude < 0.1 then
+		return "forward"
+	end
+
+	local camlook = Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit
+	local camright = Vector3.new(camera.CFrame.RightVector.X, 0, camera.CFrame.RightVector.Z).Unit
+
+	local forwardDot = moveDirection:Dot(camlook)
+	local rightDot = moveDirection:Dot(camright)
+
+	if math.abs(forwardDot) > math.abs(rightDot) then
+		return forwardDot > 0 and "forward" or "back"
+	else
+		return rightDot > 0 and "right" or "left"
+	end
+end
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed or input.KeyCode ~= Enum.KeyCode.Q or not canDash then return end
+
+	local character = player.Character
+	if not character then return end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root or humanoid.Health <= 0 then return end
+
+	if character:GetAttribute("stunned") or character:GetAttribute("ragdolled") then return end
+
+	canDash = false
+	local direction = getDashDirection(character, humanoid)
+
+	dashEvent:FireServer(direction)
+
+	local selectedanim = nil 
+	if direction == "forward" then
+		selectedanim = animations:WaitForChild("forwarddash")
+	elseif direction == "back" then
+		selectedanim = animations:WaitForChild("backwarddash")
+	elseif direction == "right" then
+		selectedanim = animations:WaitForChild("rightdash")
+	elseif direction == "left" then
+		selectedanim = animations:WaitForChild("leftdash")
+	end
+
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+	local animationTrack = animator:LoadAnimation(selectedanim)
+	animationTrack.Priority = Enum.AnimationPriority.Action
+	animationTrack:Play()
+
+	
+
+	humanoid.AutoRotate = false
+
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = root
+	local linearVelocity = Instance.new("LinearVelocity")
+	linearVelocity.Attachment0 = attachment
+	linearVelocity.MaxForce = 100000
+	linearVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
+	linearVelocity.Parent = root
+
+	local camLook = Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit
+	local camRight = Vector3.new(camera.CFrame.RightVector.X, 0, camera.CFrame.RightVector.Z).Unit
+	local moveVector = Vector3.zero
+
+	if direction == "forward" then
+		moveVector = camLook
+	elseif direction == "back" then
+		moveVector = -camLook
+	elseif direction == "right" then
+		moveVector = camRight
+	elseif direction == "left" then
+		moveVector = -camRight
+	end
+
+	linearVelocity.VectorVelocity = moveVector * force
+
+	task.delay(dashDuration, function()
+		if linearVelocity then linearVelocity:Destroy() end
+		if attachment then attachment:Destroy() end
+		humanoid.AutoRotate = true
+	end)
+
+	task.delay(dashCooldown, function()
+		canDash = true
+	end)
+end)

@@ -1,0 +1,69 @@
+local profilestore = require(game.ServerScriptService.libraries.ProfileStore)
+local players = game:GetService("Players")	
+local RunService = game:GetService("RunService")
+local stored = require(game.ServerScriptService.data.stored)
+local datamanager = require(game.ServerScriptService.data.datamanager)
+local functions = require(game.ServerScriptService.progress.functions)
+
+
+local function getname()
+return RunService:IsStudio() and "test" or "live"
+
+end
+
+local store = profilestore.New(getname(),stored)
+
+
+local function onPlayerAdded(player)
+	local profile = store:StartSessionAsync("Player_"..player.UserId, {
+		Cancel = function()
+			return player.Parent ~= players
+		end,
+	})
+
+	if profile ~= nil then
+profile:AddUserId(player.UserId)
+profile:Reconcile()
+
+		
+
+profile.OnSessionEnd:Connect(function()
+			datamanager.profiles[player] = nil
+			player:Kick("please rejoin")
+		end)
+
+		if player.Parent == players then
+			datamanager.profiles[player] = profile
+			
+	
+            local coins = Instance.new("IntValue")
+            coins.Name = "coins"
+  
+			coins.Value = profile.Data.coins
+			local gems = Instance.new("IntValue")
+			gems.Name = "gems"
+		
+			gems.Value = profile.Data.gems
+
+		player:SetAttribute("dataloaded",true)
+			player:SetAttribute("coins",profile.Data.coins )
+            player:SetAttribute("gems",profile.Data.gems )
+			
+		else
+			profile:EndSession()
+		end
+	else
+
+player:Kick("please rejoin")
+		end 
+end
+
+	       players.PlayerAdded:Connect(onPlayerAdded)
+
+        
+players.PlayerRemoving:Connect(function(player)
+		local profile = datamanager.profiles[player]
+		if profile ~= nil then
+			profile:EndSession()
+		end
+	end)

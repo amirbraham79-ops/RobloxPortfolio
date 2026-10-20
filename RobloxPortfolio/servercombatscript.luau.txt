@@ -1,0 +1,184 @@
+local rp = game:GetService("ReplicatedStorage")
+local iswung = rp.remoteevents.iswung
+local confirmedswing = rp.remoteevents.confirmedswing
+local combatconfig = require(game.ReplicatedStorage.combatconfig)
+local updatecombat = rp.remoteevents.updatecombat
+local ragdoll = require(rp.RagdollService)
+local players = game:GetService("Players")
+local combocount = {}
+local lastattack  = {}
+
+local function canattack(player)
+local character = player.Character
+if not character then return end 
+local humanoid = character:FindFirstChild("Humanoid")
+if not humanoid then return end 
+if humanoid.Health <= 0 then return end 
+	if character:GetAttribute("stunned") then return false end
+local now = os.clock()
+
+	if lastattack[player] and now - lastattack[player] < combatconfig.cooldown then return  
+else 
+
+lastattack[player] = now 
+return true 
+end
+
+
+end
+
+local function gettarget(player)
+
+	local character = player.Character
+	if not character then return end 
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not humanoid then return end 
+	if humanoid.Health <= 0 then return end 
+local humanoidrootpart = character:FindFirstChild("HumanoidRootPart")
+	if not humanoidrootpart then return end 
+
+	if character:GetAttribute("stunned") then return false end
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = {character}
+
+local boxpos = humanoidrootpart.CFrame * CFrame.new(0,0,-combatconfig.hitboxpos)
+local parts = workspace:GetPartBoundsInBox(boxpos, combatconfig.hitboxsize, params)
+local targets,seen = {},{}
+
+for _ , part in pairs(parts) do 
+
+
+local humanoid = part.Parent:FindFirstChildOfClass("Humanoid")
+if humanoid and humanoid.Health > 0 and not seen[humanoid]then 
+table.insert(targets,humanoid)
+seen[humanoid] = true 
+			
+end
+
+
+
+
+
+end
+
+	return targets
+end
+
+local function stun(character)
+local stamp = os.clock()
+	local humanoid = character:FindFirstChild("Humanoid")
+
+local duration = 1.5
+	if character:GetAttribute("stunned") == nil then
+		character:SetAttribute("basespeed", humanoid.WalkSpeed)
+		character:SetAttribute("basejump", humanoid.JumpPower)
+	end
+
+	character:SetAttribute("stunned", stamp)
+	humanoid.WalkSpeed = 3
+	humanoid.JumpPower = 0
+
+	task.delay(duration, function()
+		if character:GetAttribute("stunned") ~= stamp then return end 
+
+		character:SetAttribute("stunned", nil)
+		humanoid.WalkSpeed = character:GetAttribute("basespeed") or 16
+		humanoid.JumpPower = character:GetAttribute("basejump") or 50
+		character:SetAttribute("basespeed", nil)
+		character:SetAttribute("basejump", nil)
+	
+
+end)
+
+end
+local function pushplayer(player,target)
+	local character = player.Character
+	if not character then return end 
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not humanoid then return end 
+	if humanoid.Health <= 0 then return end 
+	local humanoidrootpart = character:FindFirstChild("HumanoidRootPart")
+	if not humanoidrootpart then return end 
+	local targetrootpart = target.Parent:FindFirstChild("HumanoidRootPart")
+	if not targetrootpart then return end 
+	local direction = (targetrootpart.Position - humanoidrootpart.Position).Unit
+	
+
+	local force = 150
+	targetrootpart.AssemblyLinearVelocity = direction * force
+
+
+end
+
+iswung.OnServerEvent:Connect(function(player)
+if combocount[player] == nil then 
+	combocount[player] = {hit = 0, last = 0}
+end
+	
+
+
+
+	if not canattack(player) then return end  
+	
+	local now = os.clock()
+
+	if now - combocount[player].last > 2 then 
+		combocount[player].hit = 0
+	end 
+	combocount[player].last = now
+
+
+
+	if combocount[player].hit >= 4  then 
+		combocount[player].hit = 0
+		
+task.wait(1.3)
+		
+
+	end
+	combocount[player].hit += 1
+	
+
+
+local targets = gettarget(player)
+
+	if type(targets) ~= "table" then return end 
+
+
+for _ , humanoid in targets do 
+humanoid:TakeDamage(combatconfig.damage)
+
+
+		local character = humanoid.Parent
+		stun(character)
+		
+		
+		if	combocount[player].hit == 4 then 
+
+task.delay(.2,function()
+				pushplayer(player,humanoid)
+				ragdoll.Ragdoll(humanoid.Parent)
+task.wait(2)
+				ragdoll.Unragdoll(humanoid.Parent)
+end)
+			
+end 
+
+
+
+
+confirmedswing:FireAllClients(character)
+
+
+end
+	
+
+
+ end)
+
+
+game.Players.PlayerRemoving:Connect(function(player)
+	lastattack[player] = nil 
+    combocount[player] = nil 
+end)

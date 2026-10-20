@@ -1,0 +1,123 @@
+local functions = {}
+
+local datamanager = require(game.ServerScriptService.data.datamanager)
+local pickaxe = game.ServerStorage.tools
+
+for _ , pickaxes in pairs(pickaxe:GetChildren()) do 
+
+	pickaxes:SetAttribute("pickaxe",true)
+
+end
+
+function functions.spend(player,amount,stat)
+
+	
+	local profile = datamanager.profiles[player]
+	if profile ~= nil then
+		if profile.Data[stat] < amount then
+			return false
+		end
+		profile.Data[stat] -= amount
+     
+		player:SetAttribute(stat, profile.Data[stat])
+return true 
+else 
+return false
+	end
+
+
+end
+
+--get item is used to give every newlypurchased pickaxe
+function functions.getitem(player,itemname)
+
+
+	local tools = game.ServerStorage.tools
+	local profile = datamanager.profiles[player]
+	if profile == nil then return end 
+	local tool = tools:FindFirstChild(itemname)
+	if tool == nil then return end 
+	if table.find(profile.Data.inventory,itemname) ~= nil then return end 
+
+		
+
+	local toolclone = tool:Clone()
+	toolclone.Parent = player.Backpack
+	
+	table.insert(profile.Data.inventory,itemname)
+
+end
+
+function functions.givesaved(player)
+local profile = datamanager.profiles[player]
+	
+if profile == nil then return end 
+
+for _ , tools in pairs(profile.Data.inventory) do 
+local tool = game.ServerStorage.tools:FindFirstChild(tools)
+if tool == nil then continue end 
+
+tool:Clone().Parent = player.Backpack
+
+for _ , tools in pairs(player.Backpack:GetChildren()) do 
+	 if tools:GetAttribute("pickaxe") == false then 
+				local starter = game.ServerStorage.tools:FindFirstChild("pickaxe1")
+				if starter then
+					starter:Clone().Parent = player.Backpack
+					if table.find(profile.Data.inventory, "pickaxe1") == nil then
+						table.insert(profile.Data.inventory, "pickaxe1")
+end 
+end
+end 
+end 
+end
+end
+
+function functions.getcurrency(player,stat,amount)
+
+local profile = datamanager.profiles[player]
+if profile == nil then return end 
+	profile.Data[stat] = amount + profile.Data[stat] 
+	
+player:SetAttribute(stat, profile.Data[stat])
+return true 
+
+end
+
+
+
+
+ function functions.rockspawn()
+	local gemrock = game.ServerStorage.gemrock
+	local gemrockclone = gemrock:Clone()
+	gemrockclone.Anchored = true
+	gemrockclone.Position = Vector3.new(
+		math.random(-10,166),
+		3.5,
+		math.random(-70,20)
+
+	)
+	gemrockclone.Parent = workspace
+	gemrockclone.Name = "rock"
+	gemrockclone:SetAttribute("rock",true)
+
+	return gemrockclone
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+return functions

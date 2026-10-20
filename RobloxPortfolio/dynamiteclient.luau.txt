@@ -1,0 +1,56 @@
+local bomb = game.ReplicatedStorage.remoteevents.bomb
+
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local dynamite = script.Parent
+local explosionremote = game.ReplicatedStorage.remoteevents.explosionremote
+
+local f = true
+dynamite.Activated:Connect(function()
+if f == true then 
+f = false
+
+	local mousepos = mouse.Hit.Position
+    bomb:FireServer(mousepos)
+	task.wait(.7)
+f = true 
+
+end 
+end)
+
+
+
+
+
+local Debris = game:GetService("Debris")
+
+explosionremote.OnClientEvent:Connect(function(position)
+local vfx = game.ReplicatedStorage.vfx.explosionvfx:Clone()
+local explosionsound = game.ReplicatedStorage.sound.explosionsound:Clone()
+
+
+local attachment = Instance.new("Attachment")
+attachment.Parent = workspace.Terrain
+attachment.WorldPosition = position
+
+
+explosionsound.Parent = attachment
+explosionsound:Play()
+
+	
+vfx.Position = position
+vfx.Parent = workspace
+
+
+for _ , i in pairs(vfx:GetDescendants()) do 
+
+if i:IsA ("ParticleEmitter") then 
+
+i:Emit(50)
+
+end
+end
+	Debris:AddItem(attachment, 1.5)
+    Debris:AddItem(vfx,.7)
+
+end)

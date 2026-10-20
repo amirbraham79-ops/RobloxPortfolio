@@ -1,0 +1,177 @@
+
+local uis = game:GetService("UserInputService")
+local rp = game:GetService("ReplicatedStorage")
+local iswung = game.ReplicatedStorage.remoteevents.iswung
+local player = game.Players.LocalPlayer
+local updatecombat = game.ReplicatedStorage.remoteevents.updatecombat
+local combatconfig = require(rp.combatconfig)
+local ragdoll = require(rp.RagdollService)
+local character 
+local combocount = {}
+
+local confirmedswing = game.ReplicatedStorage.remoteevents.confirmedswing
+
+local lastattack = 1 
+
+
+
+local attack1track = nil  
+
+local attack2track = nil
+
+local attack3track  = nil
+
+local attack4track = nil
+
+local function setupcharacter(newcharacter)
+character = newcharacter
+	local humanoid = newcharacter:WaitForChild("Humanoid")
+	local animator = humanoid:FindFirstChild("Animator")
+	local animations = game.ReplicatedStorage.animations
+	local attack1 = animations:FindFirstChild("attack1")
+	local attack2 = animations:FindFirstChild("attack2")
+	local attack3 = animations:FindFirstChild("attack3")
+	local attack4 = animations:FindFirstChild("attack4")
+
+	attack1track = animator:LoadAnimation(attack1)
+
+	 attack2track = animator:LoadAnimation(attack2)
+
+	attack3track = animator:LoadAnimation(attack3)
+
+	 attack4track = animator:LoadAnimation(attack4)
+	
+
+end
+ player.CharacterAdded:Connect(setupcharacter)
+if player.Character then
+	setupcharacter(player.Character)
+end
+	
+
+
+task.wait(4)
+
+
+	uis.InputBegan:Connect(function(input,gameprocessed)
+
+
+	
+
+	
+
+
+		if gameprocessed then return end
+if not character then return end 
+
+		if character:FindFirstChildOfClass("Tool") then return end
+		if input.UserInputType == Enum.UserInputType.MouseButton1   then 
+		if character:GetAttribute("stunned") then return end
+		if combocount[player] == nil then 
+			combocount[player] = {hit = 0, last = 0}
+		end
+		local now = os.clock()
+		
+		if now - combocount[player].last > 2  then 
+			combocount[player].hit = 0
+		end 
+		combocount[player].last = now
+
+			
+			if os.clock() - lastattack < combatconfig.cooldown then return end
+			lastattack= os.clock()
+			iswung:FireServer()
+              
+		if combocount[player].hit >= 4  then 
+			combocount[player].hit = 0
+
+		end
+combocount[player].hit += 1 
+	
+
+
+			print("input given")
+		if combocount[player].hit == 1 then 
+print("anim1")
+			attack1track:Play()
+
+return
+end
+		if combocount[player].hit == 2 then 
+			attack2track:Play()
+print("anim2")
+		return end 
+
+		if combocount[player].hit == 3 then 
+			attack3track:Play()
+print("anim3")
+		return end 
+
+		if combocount[player].hit == 4 then 
+print("anim4")
+			attack4track:Play()
+			local heavycooldown = 1.3
+			task.wait(heavycooldown)
+			return
+return 
+
+		end
+
+end
+
+
+	end)
+
+
+
+
+
+
+uis.InputBegan:Connect(function(input,gameprocessed)
+	local character = player.Character
+	if not character then return end 
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not humanoid then return end 
+
+if gameprocessed then return end 
+
+if uis:IsKeyDown(Enum.KeyCode.LeftShift) then
+
+if character:GetAttribute("stunned") ~= nil then return end 
+
+humanoid.WalkSpeed = 32
+		while uis:IsKeyDown(Enum.KeyCode.LeftShift) do
+			
+			task.wait(0.01)
+			if not  uis:IsKeyDown(Enum.KeyCode.LeftShift) then 
+				humanoid.WalkSpeed =16
+				break
+			end
+		end
+end
+
+
+
+ end)
+
+
+confirmedswing.OnClientEvent:Connect(function(character)
+print("received confirmation")
+local hrp = character:FindFirstChild("HumanoidRootPart")
+if hrp == nil then return end 
+local position = hrp.Position
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = workspace.Terrain
+	attachment.WorldPosition = position
+local hitsound = rp.sound.hitsound:Clone()
+hitsound.Parent = attachment
+hitsound:Play()
+game.Debris:AddItem(attachment, 1)
+
+local hitemitter = rp.vfx.hitemitter:Clone()
+hitemitter.Parent = attachment
+hitemitter:Emit(50)
+local debris = game:GetService("Debris")
+debris:AddItem(attachment, 3)
+	
+end)

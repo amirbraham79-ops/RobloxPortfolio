@@ -1,0 +1,45 @@
+local runservice = game:GetService("RunService")
+local p = game.ServerStorage.cat.Model.Part
+
+
+
+game.Players.PlayerAdded:Connect(function(player)
+
+	for _ , v in pairs(game.Players:GetChildren()) do
+		local pet = p:Clone()
+	pet.Parent = game.Workspace
+
+	
+	pet:SetAttribute("player",v.UserId)
+    pet:SetAttribute("pet",true)
+end
+
+end)
+
+
+
+runservice.Stepped:Connect(function()
+task.wait(1)
+for _ , i in pairs(game.Workspace:GetChildren()) do 
+if i:GetAttribute("pet") == true and i:GetAttribute("player") ~= nil then 
+	local pet = i
+
+	local alignpos = pet.AlignPosition
+	local alignori = pet.AlignOrientation
+
+	local playeruserid = pet:GetAttribute("player")
+	local player = game.Players:GetPlayerByUserId(playeruserid)
+	if player == nil then return end 
+	local character = player.Character
+    if character == nil then return end
+	local hrp = player.Character.HumanoidRootPart
+	local character = player.Character
+
+
+	alignori.CFrame = hrp.CFrame 
+
+	alignpos.Position = hrp.Position + hrp.CFrame.LookVector * -3 + hrp.CFrame.RightVector * 3 + hrp.CFrame.UpVector * 3
+end
+end
+
+end)

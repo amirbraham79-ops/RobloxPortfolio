@@ -1,0 +1,46 @@
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local players = game:GetService("Players")
+
+local dashEvent = replicatedStorage:WaitForChild("DashEvent")
+
+local playerCooldowns = {}
+local dashCooldown = 1
+local dashDuration = 0.15
+
+local validDirections = {
+	forward = true,
+	back = true,
+	right = true,
+	left = true
+}
+
+dashEvent.OnServerEvent:Connect(function(player, direction)
+	local character = player.Character
+	if not character then return end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
+
+	if character:GetAttribute("stunned") or character:GetAttribute("ragdolled") then return end
+	if not validDirections[direction] then return end
+
+	local currentTime = os.clock()
+	local lastDash = playerCooldowns[player] or 0
+	if currentTime - lastDash < (dashCooldown - 0.1) then return end
+
+	playerCooldowns[player] = currentTime
+
+	character:SetAttribute("dashing", true)
+	character:SetAttribute("iframes", true)
+
+	task.delay(dashDuration, function()
+		if character and character.Parent then
+			character:SetAttribute("dashing", false)
+			character:SetAttribute("iframes", false)
+		end
+	end)
+end)
+
+players.PlayerRemoving:Connect(function(player)
+	playerCooldowns[player] = nil
+end)

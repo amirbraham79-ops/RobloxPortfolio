@@ -1,0 +1,46 @@
+local gemrock = game.ServerStorage.gemrock
+local players = game:GetService("Players")
+local prices = require(game.ServerScriptService.progress.prices)
+local functions = require(game.ServerScriptService.progress.functions)
+
+
+
+for i = 1, 40 do
+functions.rockspawn()
+end
+
+local functions = require(game.ServerScriptService.progress.functions)
+local proximity = game:GetService("ProximityPromptService")
+local DataManager = require(game.ServerScriptService.data.datamanager)
+
+proximity.PromptTriggered:Connect(function(prompt,player)
+local character = player.Character
+print("prompt triggered")
+local attribute
+local tool 
+
+for _ , item in pairs (character:GetChildren()) do 
+if item:GetAttribute("pickaxe") then 
+attribute = item 
+tool = item.Name
+break 
+end 
+end 
+
+if attribute == nil then return end 
+print("tool found")
+
+	if prompt.Name ~= "mine" then return end 
+   local profile = DataManager.profiles[player]
+	if profile == nil then  return end 
+
+ 
+	profile.Data.gems = profile.Data.gems + prices[tool].gain
+
+	player:SetAttribute("gems", profile.Data.gems)
+
+prompt.Parent:Destroy()
+task.wait(1)
+	functions.rockspawn()
+end)
+

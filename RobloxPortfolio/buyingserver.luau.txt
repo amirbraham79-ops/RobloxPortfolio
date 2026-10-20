@@ -1,0 +1,63 @@
+local buyitem = game.ReplicatedStorage.remoteevents.buyitem
+local datamanager = require(game.ServerScriptService.data.datamanager)
+local price = require(game.ServerScriptService.progress.prices)
+local functions = require(game.ServerScriptService.progress.functions)
+local currency = require(game.ServerScriptService.progress.currency)
+local buycurrency = game.ReplicatedStorage.remoteevents.buycurrency
+local  buyminer = game.ReplicatedStorage.remoteevents.buyminer
+local successsound = game.StarterGui.ShopGUI.successsound
+
+buyitem.OnServerEvent:Connect(function(player,item,payment)
+	local profile = datamanager.profiles[player]
+if profile == nil then return end 
+local price = price[item].cost
+
+if not price then return end 
+if table.find(profile.Data.inventory,item) ~= nil then return end  
+local success = functions.spend(player,price,payment)
+
+if success == false then return end 
+
+functions.getitem(player,item)
+successsound:Play()
+end)
+
+buycurrency.OnServerEvent:Connect(function(player,currencytobuy,payment)
+	local profile = datamanager.profiles[player]
+	if profile == nil then return end 
+
+	local option = currency[currencytobuy]
+	if not option then return end
+
+	local cost = option.cost
+
+
+if not cost then return end 
+local success = functions.spend(player,cost,payment)
+if success == false then return end 
+	successsound:Play()
+	
+	functions.getcurrency(player,currencytobuy,currency[currencytobuy].amount)
+
+end)
+
+buyminer.OnServerEvent:Connect(function(player,miner,payment)
+	local profile = datamanager.profiles[player]
+	if profile == nil then return end 
+	if table.find(profile.Data.workers,miner)  ~= nil then return end 
+	local option = price[miner]
+	if not option then return end
+
+	local cost = option.cost
+
+
+	if not cost then return end 
+	local success = functions.spend(player,cost,payment)
+if success then 
+
+table.insert(profile.Data.workers,miner)
+		successsound:Play()
+end 
+
+
+end)

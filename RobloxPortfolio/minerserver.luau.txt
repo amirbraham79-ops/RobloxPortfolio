@@ -1,0 +1,162 @@
+local pathfindingservice = game:GetService("PathfindingService")
+
+
+local uis = game:GetService("UserInputService")
+local datamanager = require(game.ServerScriptService.data.datamanager)
+local ai = game.ReplicatedStorage.remoteevents.ai
+local functions = require(game.ServerScriptService.progress.functions)
+local spawnai = game.ReplicatedStorage.remoteevents.spawnai
+local mining = nil
+local miner =  nil
+local goalpart = nil
+
+function spawnminer(player)
+
+
+local profile = datamanager.profiles[player]	
+if profile == nil then return end
+
+	if game.Workspace:FindFirstChild("Miner") ~= nil then  
+if game.Workspace:FindFirstChild("Miner"):GetAttribute("OwnerUserId") ~= nil  then
+if 	game.Workspace:FindFirstChild("Miner"):GetAttribute("OwnerUserId") == player.UserId then return end
+end 
+end
+local miner = "Miner"
+if table.find (profile.Data.workers,miner) == nil then return end 
+
+local miner = game.ServerStorage:FindFirstChild(miner)
+local minerclone = miner:Clone()
+minerclone.Parent = game.Workspace
+minerclone.Name = "Miner"
+
+	minerclone:SetAttribute("OwnerUserId", player.UserId)
+
+
+
+
+end
+
+spawnai.OnServerEvent:Connect(function(player)
+
+spawnminer(player)
+
+end)
+
+
+
+
+
+ai.OnServerEvent:Connect(function(player)
+	 
+	for _ , child in pairs(game.Workspace:GetChildren()) do 
+		if child.Name == "Miner" and child:GetAttribute("OwnerUserId") == player.UserId then 
+			miner = child 
+			
+		end 
+	end
+	if not miner then return end 
+	local humanoid = miner:FindFirstChild("Humanoid")
+
+	
+	
+	local shortdistance = math.huge
+	
+	for _ , child in pairs(game.Workspace:GetChildren()) do
+		if child.Name == "rock" and child:IsA("BasePart") then 
+			local distance = (child.Position -  miner.HumanoidRootPart.Position).Magnitude
+			if distance < shortdistance then 
+				shortdistance = distance
+				goalpart = child
+               
+ 
+			end 
+		end
+	end
+
+	local path = pathfindingservice:CreatePath()
+   local success , err = pcall (function()
+  path:ComputeAsync(miner:FindFirstChild("HumanoidRootPart").Position,goalpart.Position)
+
+    end)
+	miner.HumanoidRootPart.Anchored = false
+if  not success then return end 
+	
+
+
+		local hum = miner:WaitForChild("Humanoid")
+		local animator = hum:WaitForChild("Animator")
+		local  running = game.ReplicatedStorage.animations.running
+		local runtrack = animator:LoadAnimation(running)
+		runtrack:Play()
+		
+
+local mined = false
+for _, waypoint in pairs(path:GetWaypoints()) do 
+
+
+	
+
+
+			humanoid:MoveTo(waypoint.Position)
+			
+
+		task.spawn(function()
+
+			while true do 
+				task.wait(.1)
+
+				if (miner.HumanoidRootPart.Position - goalpart.Position).Magnitude < 8 then
+if mined then return end 
+mined = true  
+
+					miner.HumanoidRootPart.Anchored = true
+					
+
+					task.wait(.3)
+					local hum = miner:WaitForChild("Humanoid")
+					local animator = hum:WaitForChild("Animator")
+					local mining = game.ReplicatedStorage.animations.mineranimation
+					local miningtrack = animator:LoadAnimation(mining)
+					runtrack:Stop()
+					miningtrack:Play()
+					
+					task.wait(1)
+					miningtrack:Stop()
+
+
+
+
+
+						goalpart:Destroy()
+ 
+					local success =	functions.getcurrency(player,"gems",5)
+if success== true then 
+						functions.rockspawn() return  end  
+
+
+
+					
+					
+					 end 
+
+		end
+			return 
+
+		end)
+       
+		
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+end)

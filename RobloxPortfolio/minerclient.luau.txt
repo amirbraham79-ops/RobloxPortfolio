@@ -1,0 +1,20 @@
+local uis = game:GetService("UserInputService")
+local ai = game.ReplicatedStorage.remoteevents.ai
+local spawnai = game.ReplicatedStorage.remoteevents.spawnai
+uis.InputBegan:Connect(function(input,gameprocessed)
+
+	if input.KeyCode == Enum.KeyCode.R then 
+ai:FireServer()
+end
+
+end)
+
+uis.InputBegan:Connect(function(input,gameprocessed)
+
+	if input.KeyCode == Enum.KeyCode.F then 
+print("input to spawn miner")
+		spawnai:FireServer("Miner")
+
+	end
+
+end)
