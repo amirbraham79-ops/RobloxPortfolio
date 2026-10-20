@@ -1,0 +1,107 @@
+local player = game.Players.LocalPlayer
+local shop = player.PlayerGui:WaitForChild("ShopGUI")
+local shopframe = shop:FindFirstChild("shopframe")
+local frame = shopframe:WaitForChild("Frame"):FindFirstChild("the3stuff")
+
+local shopbutton = shop:WaitForChild("ShopButton")
+local closebutton = shopframe:WaitForChild("closebutton")
+local copperpickaxe = frame:FindFirstChild("buypickaxe")
+local coinsimg = frame:FindFirstChild("buycoins")
+local minerbuy = frame:FindFirstChild("buyminer")
+
+local tweenservice = game:GetService("TweenService")
+local hoverinfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local openinfo= TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+local closeinfo = TweenInfo.new(0.17, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+local shopscale = shopframe:FindFirstChild("UIScale")
+shopscale.Scale = 0
+
+local hoversound = shop.hover
+local clicksound = shop.click
+ 
+local function addhover(button)
+local uiscale = button:FindFirstChild("UIScale") or Instance.new("UIScale",button)
+local current 
+local function  scaleto(value)
+if current then current:Cancel() end
+current = tweenservice:Create(uiscale, hoverinfo,{Scale = value})
+current:Play()
+end
+	button.MouseEnter:Connect(function()
+hoversound:Play()
+ scaleto(1.1) end)
+	button.MouseLeave:Connect(function()
+		hoversound:Play() scaleto(1) end)
+    
+
+end
+for _ , name in {"ShopButton", "buycoins", "buyminer", "buypickaxe", "closebutton"} do
+	local button = shop:FindFirstChild(name, true )
+
+if button then 
+addhover(button)
+
+
+end
+end
+
+
+
+
+shopbutton.Activated:Connect(function()
+	if shopframe.Visible then
+	
+        clicksound:Play()
+
+		local shoptweencl
+		if shoptweencl then shoptweencl:Cancel() end
+		shopscale = shopframe:FindFirstChild("UIScale")
+		shoptweencl = tweenservice:Create(shopscale, closeinfo, {Scale = 0})
+		shoptweencl:Play()
+		shoptweencl.Completed:Connect(function()
+			shopframe.Visible = false
+		end)
+	else
+		clicksound:Play()
+		shopframe.Visible = true
+local shoptween
+if shoptween then shoptween:Cancel() end
+ shopscale = shopframe:FindFirstChild("UIScale")
+		 shoptween = tweenservice:Create(shopscale, openinfo, {Scale = 1})
+		shoptween:Play()
+	end
+
+	
+		
+end)
+
+closebutton.Activated:Connect(function()
+	
+     clicksound:Play()
+	local shoptweencl
+	if shoptweencl then shoptweencl:Cancel() end
+	shopscale = shopframe:FindFirstChild("UIScale") 
+	shoptweencl = tweenservice:Create(shopscale, closeinfo, {Scale = 0})
+	shoptweencl:Play()
+	shoptweencl.Completed:Connect(function()
+		shopframe.Visible = false
+	end)
+
+end)
+
+
+copperpickaxe.Activated:Connect(function()
+	game.ReplicatedStorage.remoteevents.buyitem:FireServer("copperpickaxe","coins")
+
+end)
+
+coinsimg.Activated:Connect(function()
+
+	game.ReplicatedStorage.remoteevents.buycurrency:FireServer("coins","gems")
+
+end)
+
+minerbuy.Activated:Connect(function()
+	game.ReplicatedStorage.remoteevents.buyminer:FireServer("Miner","coins")
+end)

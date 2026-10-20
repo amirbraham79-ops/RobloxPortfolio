@@ -1,0 +1,30 @@
+local player = game.Players.LocalPlayer
+local statgui = player.PlayerGui:WaitForChild("statgui")
+local amountofgems = statgui:WaitForChild("gemsgui"):WaitForChild("amountofgems")
+local amountofcoins = statgui:WaitForChild("coinsgui"):WaitForChild("amountofcoins")
+
+local function update(label,attributename)
+
+
+local function labelchange()
+
+label.Text = (tostring(player:GetAttribute(attributename)))
+end
+	
+
+	player:GetAttributeChangedSignal(attributename):Connect(function()
+
+	labelchange()
+end)
+if player:GetAttribute(attributename) == nil  then
+label.Text = "....."
+else 
+labelchange()
+end
+		
+end
+
+
+
+update(amountofgems,"gems")
+update(amountofcoins,"coins")
